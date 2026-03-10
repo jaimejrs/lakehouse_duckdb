@@ -51,17 +51,17 @@ Todo o ambiente sobe com um único `docker compose up` e roda **100% local**, se
 ┌─────────────────────────────────────────────────────────────┐
 │                      Docker Compose                         │
 │                                                             │
-│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌─────────┐  │
-│  │  MinIO   │   │  DuckDB  │   │   dbt    │   │ Jupyter │  │
-│  │ (S3)     │◄──│ (Engine) │◄──│ (ELT)   │   │  Lab    │  │
-│  │ :9000    │   │          │   │          │   │ :8888   │  │
-│  │ :9001    │   │          │   │          │   │         │  │
-│  └──────────┘   └──────────┘   └──────────┘   └─────────┘  │
+│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌─────────┐   │
+│  │  MinIO   │   │  DuckDB  │   │   dbt    │   │ Jupyter │   │
+│  │ (S3)     │◄──│ (Engine) │◄──│ (ELT)   │    │  Lab    │   │
+│  │ :9000    │   │          │   │          │   │ :8888   │   │
+│  │ :9001    │   │          │   │          │   │         │   │
+│  └──────────┘   └──────────┘   └──────────┘   └─────────┘   │
 │       ▲              ▲              ▲              │        │
 │       │              │              │              │        │
 │       └──────────────┴──────────────┴──────────────┘        │
-│                    Volume Compartilhado                      │
-│                  (lakehouse.duckdb + data)                   │
+│                    Volume Compartilhado                     │
+│                  (lakehouse.duckdb + data)                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -72,91 +72,6 @@ Todo o ambiente sobe com um único `docker compose up` e roda **100% local**, se
 3. **DuckDB** → Consulta tabelas Iceberg diretamente via extensões `httpfs` e `iceberg`
 4. **dbt** → Transforma dados brutos em modelos analíticos (staging → marts)
 5. **Jupyter Lab** → Análise interativa e visualizações
-
----
-
-## 📂 Estrutura do Projeto
-
-```
-lakehouse_duckdb/
-└── modern-lakehouse-duckdb-iceberg/
-    ├── docker-compose.yml              # Orquestração dos 6 serviços
-    ├── docker/
-    │   ├── duckdb/Dockerfile           # Imagem DuckDB + Python
-    │   ├── dbt/Dockerfile              # Imagem dbt + DuckDB adapter
-    │   ├── init/Dockerfile             # Imagem de inicialização
-    │   └── jupyter/Dockerfile          # Imagem Jupyter Lab
-    ├── scripts/
-    │   ├── init_lakehouse.py           # Orquestrador da inicialização
-    │   ├── generate_fake_data.py       # Geração de dados sintéticos
-    │   ├── create_real_iceberg_table.py# Criação de tabela Iceberg real
-    │   ├── example_queries.py          # 8 queries analíticas de exemplo
-    │   └── run_dbt.py                  # Executor do dbt
-    ├── dbt/
-    │   ├── dbt_project.yml             # Configuração do projeto dbt
-    │   ├── profiles.yml                # Perfil de conexão DuckDB
-    │   └── models/
-    │       ├── staging/                # stg_vendas (limpeza)
-    │       └── marts/                  # fct_vendas, dim_produtos,
-    │                                   # dim_clientes, mart_vendas_mensal
-    ├── notebooks/
-    │   ├── test_duckdb_connection.ipynb # Teste de conexão e queries
-    │   └── enriquecer_clientes_estados.ipynb
-    └── data/                           # Dados gerados (Parquet/CSV)
-```
-
----
-
-## 🚀 Como Executar
-
-### Pré-requisitos
-
-- **Docker** ≥ 20.10
-- **Docker Compose** ≥ 2.0
-- **Git**
-
-### Subir o Ambiente
-
-```bash
-git clone <repo-url>
-cd lakehouse_duckdb/modern-lakehouse-duckdb-iceberg
-docker compose up
-```
-
-> ⚠️ Na primeira execução, rode sem `-d` para acompanhar os logs e validar que tudo funcionou.
-
-O Docker Compose irá automaticamente:
-
-1. ✅ Subir **MinIO** (portas 9000/9001)
-2. ✅ Subir **DuckDB** (container com Python)
-3. ✅ Executar **init-service**: gerar dados fake + criar tabela Iceberg
-4. ✅ Executar **dbt run + dbt test**: modelos staging e marts
-5. ✅ Subir **Jupyter Lab** em http://localhost:8888
-
-### Acessos
-
-| Serviço | URL | Credenciais |
-|---------|-----|------------|
-| MinIO Console | http://localhost:9001 | `admin` / `minioadmin123` |
-| Jupyter Lab | http://localhost:8888 | Sem autenticação |
-| MinIO API | http://localhost:9000 | — |
-
----
-
-## 🔄 Modelos dbt
-
-O projeto implementa modelagem dimensional com a seguinte hierarquia:
-
-```
-Source (vendas_iceberg)
-  └── Staging
-        └── stg_vendas (view — limpeza e padronização)
-              └── Marts
-                    ├── fct_vendas (table — fato de vendas)
-                    ├── dim_produtos (table — dimensão produtos)
-                    ├── dim_clientes (table — dimensão clientes)
-                    └── mart_vendas_mensal (table — agregação mensal)
-```
 
 ---
 
